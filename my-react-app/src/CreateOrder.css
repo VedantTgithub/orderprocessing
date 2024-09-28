@@ -9,6 +9,16 @@ body {
     flex-direction: column;
 }
 
+table td {
+    color:white;  /* Ensures text color is visible */
+    font-weight: bold;  /* Makes the product code more prominent */
+}
+
+td:first-child {
+    width: 150px; /* Adjust width of product code column if it's too narrow */
+}
+
+
 /* Navigation Bar */
 .navbar {
     width: 100%; /* Full width of the screen */
