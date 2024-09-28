@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import Papa from 'papaparse'; // Import papaparse for CSV parsing
+import axios from 'axios'; // Import Axios
 import './CreateOrder.css';
 
 const CreateOrder = () => {
@@ -18,18 +19,16 @@ const CreateOrder = () => {
                 skipEmptyLines: true,
                 complete: (result) => {
                     const parsedProducts = result.data.map(row => ({
-                        code: row["Product Code"] || '',          // Use the CSV column name 'Product Code'
-                        description: row["Description"] || '',    // Use the CSV column name 'Description'
-                        minOrderQty: row["MOQ"] || 0,             // Use the CSV column name 'MOQ'
-                        price: row["Price"] || 0,                 // Use the CSV column name 'Price'
-                        quantityOrdered: row["Quantity Ordered"] || 0, // Use the CSV column name 'Quantity Ordered'
-                        totalValue: (row["Quantity Ordered"] || 0) * (row["Price"] || 0),
+                        code: row["Product Code"] || '',
+                        description: row["Description"] || '',
+                        minOrderQty: Number(row["MOQ"]) || 0,
+                        price: Number(row["Price"]) || 0,
+                        quantityOrdered: Number(row["Quantity Ordered"]) || 0,
+                        totalValue: (Number(row["Quantity Ordered"]) || 0) * (Number(row["Price"]) || 0),
                     }));
 
-                    // Update products state with CSV data
                     setProducts(parsedProducts);
 
-                    // Update total quantity and total value
                     const totalQty = parsedProducts.reduce((sum, product) => sum + Number(product.quantityOrdered), 0);
                     const totalValue = parsedProducts.reduce((sum, product) => sum + product.totalValue, 0);
                     setTotalQty(totalQty);
@@ -42,8 +41,7 @@ const CreateOrder = () => {
     const handleQuantityChange = (index, newQty) => {
         const updatedProducts = products.map((product, i) => {
             if (i === index) {
-                const updatedProduct = { ...product, quantityOrdered: newQty, totalValue: newQty * product.price };
-                return updatedProduct;
+                return { ...product, quantityOrdered: newQty, totalValue: newQty * product.price };
             }
             return product;
         });
@@ -57,15 +55,31 @@ const CreateOrder = () => {
         setTotalValue(totalValue);
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        // Handle the order submission
-        console.log('Order submitted', { distributorName, orderNo, totalQty, totalValue, products });
+
+        const orderData = {
+            distributorName,
+            orderNo,
+            totalQty,
+            totalValue,
+            products
+        };
+
+        // Send data to the backend using Axios
+        try {
+            const response = await axios.post('http://localhost:1234/api/orders', orderData);
+            if (response.status === 200) {
+                alert('Order submitted successfully');
+            }
+        } catch (error) {
+            console.error('Error submitting order:', error);
+            alert('Failed to submit order');
+        }
     };
 
     return (
         <div className="create-order-container">
-            {/* Navigation Bar */}
             <nav className="navbar">
                 <div className="navbar-brand">Acme Corp</div>
                 <ul className="nav-links">
@@ -80,6 +94,9 @@ const CreateOrder = () => {
             </nav>
 
             <h2>Create an Order</h2>
+            <Link to="/admin/orders">
+    <button type="button">Go to Central Admin Order Management</button>
+</Link>
             <form onSubmit={handleSubmit} className="order-form">
                 <h3>Step 1: Upload an Order Template</h3>
                 <a href="/order_template.csv" download>
@@ -121,10 +138,10 @@ const CreateOrder = () => {
                     <tbody>
                         {products.map((product, index) => (
                             <tr key={index}>
-                                <td>{product.code}</td>
+                                <td style={{ wordBreak: 'break-all' }}>{product.code}</td>
                                 <td>{product.description}</td>
                                 <td>{product.minOrderQty}</td>
-                                <td>${product.price}</td>
+                                <td>${product.price.toFixed(2)}</td>
                                 <td>
                                     <input
                                         type="number"
