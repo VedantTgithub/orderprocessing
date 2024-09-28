@@ -1,42 +1,42 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+/* App.css */
+
+/* Apply a dark background to the whole application */
+body {
+  background-color: #121212; /* Dark background color */
+  color: #fff; /* Light text color for contrast */
+  margin: 0; /* Remove default margin */
+  font-family: Arial, sans-serif; /* Set a font family */
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
-}
-
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+/* Ensure the nav bar fits the entire width of the screen */
+nav {
+  background-color: #333; /* Darker background for nav */
+  padding: 10px 0; /* Padding only on top and bottom */
+  display: flex; /* Use flexbox to align items */
+  justify-content: space-between; /* Space between items */
+  width: 100vw; /* Make the nav bar take up full viewport width */
+  position: fixed; /* Fix the navbar to the top */
+  top: 0; /* Ensure it's always at the top */
+  left: 0; /* Align to the left */
+  z-index: 1000; /* Ensure it stays on top of content */
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+nav a {
+  color: #fff; /* White text color */
+  text-decoration: none; /* Remove underline */
+  padding: 10px 15px; /* Padding around the links */
+  border-radius: 5px; /* Rounded corners */
+  transition: background-color 0.3s; /* Smooth transition */
 }
 
-.card {
-  padding: 2em;
+nav a:hover {
+  background-color: #575757; /* Darker background on hover */
 }
 
-.read-the-docs {
-  color: #888;
+/* Ensure the content is correctly aligned with the fixed navbar */
+.content {
+  padding-top: 50px; /* Adjust this to match the height of the nav bar */
+  min-height: 80vh; /* Ensure content has a minimum height */
+  background-color: transparent; /* Set to transparent to avoid white background */
+  margin: 0; /* Remove margin */
 }

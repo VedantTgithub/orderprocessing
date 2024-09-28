@@ -60,6 +60,49 @@ app.post('/api/orders', (req, res) => {
     });
 });
 
+
+// API route to get consolidated orders
+app.get('/api/consolidated-orders', (req, res) => {
+    const query = `
+        SELECT 
+            p.code AS product_code,
+            p.description AS product_description,
+            o.distributor_name,
+            SUM(p.quantity_ordered) AS total_ordered
+        FROM 
+            products p
+        JOIN 
+            orders o ON p.order_id = o.id
+        GROUP BY 
+            p.code, p.description, o.distributor_name
+        ORDER BY 
+            p.code, o.distributor_name
+    `;
+
+    db.query(query, (err, results) => {
+        if (err) {
+            console.error('Error fetching consolidated orders:', err);
+            return res.status(500).json({ error: 'Database error' });
+        }
+
+        // Process results into a matrix format
+        const consolidatedData = {};
+        
+        results.forEach(row => {
+            if (!consolidatedData[row.product_code]) {
+                consolidatedData[row.product_code] = {
+                    description: row.product_description,
+                    totals: {}
+                };
+            }
+            consolidatedData[row.product_code].totals[row.distributor_name] = row.total_ordered;
+        });
+
+        res.status(200).json(consolidatedData);
+    });
+});
+
+
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);
 });
