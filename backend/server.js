@@ -37,6 +37,11 @@ const isOrderNoUnique = (orderNo) => {
     });
 };
 
+
+
+
+
+
 // API route to handle order submission with validation
 app.post('/api/orders', async (req, res) => {
     const { distributorName, orderNo, totalQty, totalValue, products } = req.body;
@@ -131,6 +136,27 @@ app.get('/api/consolidated-orders', (req, res) => {
         res.status(200).json(consolidatedData);
     });
 });
+
+app.post('/api/validate', (req, res) => {
+    const productCodes = req.body.productCodes;
+
+    // Check if all product codes exist in the masterlist
+    const query = 'SELECT product_code FROM masterlist WHERE product_code IN (?)';
+    db.query(query, [productCodes], (err, results) => {
+        if (err) return res.status(500).json({ message: 'Database error' });
+
+        const validCodes = results.map(row => row.product_code);
+        const invalidCodes = productCodes.filter(code => !validCodes.includes(code));
+
+        if (invalidCodes.length > 0) {
+            return res.status(400).json({ message: 'Invalid product codes', invalidCodes });
+        }
+
+        res.status(200).json({ message: 'All product codes are valid' });
+    });
+});
+
+
 
 // Start the server
 app.listen(port, () => {

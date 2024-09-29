@@ -22,8 +22,8 @@ const CreateOrder = () => {
                         code: row["Product Code"] || '',
                         description: row["Description"] || '',
                         minOrderQty: Number(row["MOQ"]) || 0,
-                        price: Number(row["Price"]) || 0,
-                        quantityOrdered: Number(row["Quantity Ordered"]) || 0,
+                        price: parseFloat(row["Price"]) || 0,
+                        quantityOrdered: parseInt(row["Quantity Ordered"], 10) || 0,
                         totalValue: (Number(row["Quantity Ordered"]) || 0) * (Number(row["Price"]) || 0),
                         isEditing: false,
                     }));
@@ -42,42 +42,60 @@ const CreateOrder = () => {
     const handleQuantityChange = (index, newQty) => {
         const updatedProducts = products.map((product, i) => {
             if (i === index) {
-                return { ...product, quantityOrdered: newQty, totalValue: newQty * product.price };
+                const updatedQty = Number(newQty);
+                return { ...product, quantityOrdered: updatedQty, totalValue: updatedQty * product.price };
             }
             return product;
         });
 
         setProducts(updatedProducts);
-
-        const totalQty = updatedProducts.reduce((sum, product) => sum + Number(product.quantityOrdered), 0);
-        const totalValue = updatedProducts.reduce((sum, product) => sum + product.totalValue, 0);
-
-        setTotalQty(totalQty);
-        setTotalValue(totalValue);
+        updateTotals(updatedProducts);
     };
 
     const handleEditToggle = (index) => {
-        setProducts((prevProducts) =>
-            prevProducts.map((product, i) =>
-                i === index ? { ...product, isEditing: !product.isEditing } : product
-            )
+        const updatedProducts = products.map((product, i) =>
+            i === index
+                ? { ...product, isEditing: !product.isEditing }
+                : product
         );
+
+        // If switching from editing to non-editing, update the totals
+        if (updatedProducts[index].isEditing) {
+            updateTotals(updatedProducts);
+        }
+        
+        setProducts(updatedProducts);
     };
 
     const handleInputChange = (index, field, value) => {
         const updatedProducts = products.map((product, i) => {
             if (i === index) {
-                return { ...product, [field]: value, totalValue: product.price * product.quantityOrdered };
+                const updatedProduct = {
+                    ...product,
+                    [field]: field === 'price' || field === 'minOrderQty' || field === 'quantityOrdered'
+                        ? parseFloat(value) || 0
+                        : value
+                };
+                updatedProduct.totalValue = updatedProduct.price * updatedProduct.quantityOrdered; // Recalculate total value
+                return updatedProduct;
             }
             return product;
         });
+        
         setProducts(updatedProducts);
+        updateTotals(updatedProducts);
+    };
+
+    const updateTotals = (updatedProducts) => {
+        const newTotalQty = updatedProducts.reduce((sum, product) => sum + Number(product.quantityOrdered), 0);
+        const newTotalValue = updatedProducts.reduce((sum, product) => sum + product.totalValue, 0);
+        setTotalQty(newTotalQty);
+        setTotalValue(newTotalValue);
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Frontend validation: Check if fields are empty
         if (!distributorName.trim()) {
             alert('Distributor Name is required.');
             return;
@@ -90,7 +108,7 @@ const CreateOrder = () => {
             alert('You must upload a CSV file with products.');
             return;
         }
-        // Check if all products have non-empty fields
+
         for (let i = 0; i < products.length; i++) {
             const product = products[i];
             if (!product.code || !product.description || product.minOrderQty <= 0 || product.price <= 0 || product.quantityOrdered <= 0) {
@@ -107,7 +125,6 @@ const CreateOrder = () => {
             products
         };
 
-        // Send data to the backend using Axios
         try {
             const response = await axios.post('http://localhost:1234/api/orders', orderData);
             if (response.status === 200) {
@@ -193,7 +210,7 @@ const CreateOrder = () => {
                                         <td>{product.code}</td>
                                         <td>{product.description}</td>
                                         <td>{product.minOrderQty}</td>
-                                        <td>${product.price.toFixed(2)}</td>
+                                        <td>${Number(product.price).toFixed(2)}</td>
                                         <td>{product.quantityOrdered}</td>
                                         <td>${product.totalValue.toFixed(2)}</td>
                                     </>
@@ -215,8 +232,6 @@ const CreateOrder = () => {
                 </table>
 
                 <h3>Step 3: Submit Your Order</h3>
-                <textarea placeholder="Special Instructions" />
-
                 <button type="submit">Submit Order</button>
             </form>
         </div>
