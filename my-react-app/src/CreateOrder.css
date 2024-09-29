@@ -1,6 +1,6 @@
 /* General body styling */
 body {
-    background-color: #121212;
+    background-color: #ffffff;
     margin: 0;
     font-family: 'Roboto', sans-serif;
     color: #ffffff;
@@ -77,14 +77,14 @@ td:first-child {
 }
 
 h2, h3 {
-    color: #bb86fc;
+    color: #000000;
     margin-bottom: 10px;
 }
 
 .order-form {
-    background-color: #1e1e1e;
+    background-color: #ffffff;
     border-radius: 10px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.3);
     padding: 30px;
     width: 100%;
     max-width: 1200px; /* Limit the form's width */
@@ -139,7 +139,7 @@ th, td {
 }
 
 th {
-    background-color: #bb86fc;
+    background-color: #000000;
 }
 
 td {

@@ -2,7 +2,7 @@
 
 /* Apply a dark background to the whole application */
 body {
-  background-color: #121212; /* Dark background color */
+  background-color: #ffffff; /* Dark background color */
   color: #fff; /* Light text color for contrast */
   margin: 0; /* Remove default margin */
   font-family: Arial, sans-serif; /* Set a font family */

@@ -13,7 +13,7 @@ app.use(bodyParser.json());
 const db = mysql.createConnection({
     host: 'localhost',
     user: 'newuser',         // Replace with your MySQL username
-    password: 'Vedant@123', // Replace with your MySQL password
+    password: 'Vedant@123',  // Replace with your MySQL password
     database: 'order_management'
 });
 
@@ -25,41 +25,71 @@ db.connect((err) => {
     }
 });
 
-// API route to handle order submission
-app.post('/api/orders', (req, res) => {
-    const { distributorName, orderNo, totalQty, totalValue, products } = req.body;
-
-    const insertOrderQuery = `INSERT INTO orders (distributor_name, order_no, total_qty, total_value) VALUES (?, ?, ?, ?)`;
-    db.query(insertOrderQuery, [distributorName, orderNo, totalQty, totalValue], (err, result) => {
-        if (err) {
-            console.error('Error inserting order:', err);
-            return res.status(500).json({ error: 'Database error' });
-        }
-
-        const orderId = result.insertId;
-
-        const insertProductQuery = `INSERT INTO products (order_id, code, description, min_order_qty, price, quantity_ordered, total_value) VALUES ?`;
-        const productValues = products.map(product => [
-            orderId,
-            product.code,
-            product.description,
-            product.minOrderQty,
-            product.price,
-            product.quantityOrdered,
-            product.totalValue
-        ]);
-
-        db.query(insertProductQuery, [productValues], (err) => {
-            if (err) {
-                console.error('Error inserting products:', err);
-                return res.status(500).json({ error: 'Database error' });
-            }
-
-            res.status(200).json({ message: 'Order and products saved successfully' });
+// Helper function to check if the order number is unique
+const isOrderNoUnique = (orderNo) => {
+    return new Promise((resolve, reject) => {
+        const query = `SELECT COUNT(*) as count FROM orders WHERE order_no = ?`;
+        db.query(query, [orderNo], (err, results) => {
+            if (err) return reject(err);
+            const count = results[0].count;
+            resolve(count === 0); // true if no orders found
         });
     });
-});
+};
 
+// API route to handle order submission with validation
+app.post('/api/orders', async (req, res) => {
+    const { distributorName, orderNo, totalQty, totalValue, products } = req.body;
+
+    // Validation: Ensure all fields are filled and products are not empty
+    if (!distributorName || !orderNo || !totalQty || !totalValue || !products || products.length === 0) {
+        return res.status(400).json({ error: 'All fields must be filled, and products cannot be empty.' });
+    }
+
+    try {
+        // Check if order number is unique
+        const isUnique = await isOrderNoUnique(orderNo);
+        if (!isUnique) {
+            return res.status(400).json({ error: 'Order number already exists. It must be unique.' });
+        }
+
+        // Insert order into 'orders' table
+        const insertOrderQuery = `INSERT INTO orders (distributor_name, order_no, total_qty, total_value) VALUES (?, ?, ?, ?)`;
+        db.query(insertOrderQuery, [distributorName, orderNo, totalQty, totalValue], (err, result) => {
+            if (err) {
+                console.error('Error inserting order:', err);
+                return res.status(500).json({ error: 'Database error when inserting order.' });
+            }
+
+            const orderId = result.insertId;
+
+            // Insert products into 'products' table
+            const insertProductQuery = `INSERT INTO products (order_id, code, description, min_order_qty, price, quantity_ordered, total_value) VALUES ?`;
+            const productValues = products.map(product => [
+                orderId,
+                product.code,
+                product.description,
+                product.minOrderQty,
+                product.price,
+                product.quantityOrdered,
+                product.totalValue
+            ]);
+
+            db.query(insertProductQuery, [productValues], (err) => {
+                if (err) {
+                    console.error('Error inserting products:', err);
+                    return res.status(500).json({ error: 'Database error when inserting products.' });
+                }
+
+                res.status(200).json({ message: 'Order and products saved successfully' });
+            });
+        });
+
+    } catch (err) {
+        console.error('Error processing order:', err);
+        res.status(500).json({ error: 'Server error during order processing' });
+    }
+});
 
 // API route to get consolidated orders
 app.get('/api/consolidated-orders', (req, res) => {
@@ -102,7 +132,7 @@ app.get('/api/consolidated-orders', (req, res) => {
     });
 });
 
-
+// Start the server
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);
 });

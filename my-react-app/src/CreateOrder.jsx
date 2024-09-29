@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import Papa from 'papaparse'; // Import papaparse for CSV parsing
-import axios from 'axios'; // Import Axios
+import Papa from 'papaparse';
+import axios from 'axios';
 import './CreateOrder.css';
 import { Link } from 'react-router-dom';
 
@@ -11,7 +11,6 @@ const CreateOrder = () => {
     const [totalValue, setTotalValue] = useState(0);
     const [products, setProducts] = useState([]);
 
-    // Parse and handle CSV upload
     const handleCSVUpload = (e) => {
         const file = e.target.files[0];
         if (file) {
@@ -26,6 +25,7 @@ const CreateOrder = () => {
                         price: Number(row["Price"]) || 0,
                         quantityOrdered: Number(row["Quantity Ordered"]) || 0,
                         totalValue: (Number(row["Quantity Ordered"]) || 0) * (Number(row["Price"]) || 0),
+                        isEditing: false,
                     }));
 
                     setProducts(parsedProducts);
@@ -56,8 +56,48 @@ const CreateOrder = () => {
         setTotalValue(totalValue);
     };
 
+    const handleEditToggle = (index) => {
+        setProducts((prevProducts) =>
+            prevProducts.map((product, i) =>
+                i === index ? { ...product, isEditing: !product.isEditing } : product
+            )
+        );
+    };
+
+    const handleInputChange = (index, field, value) => {
+        const updatedProducts = products.map((product, i) => {
+            if (i === index) {
+                return { ...product, [field]: value, totalValue: product.price * product.quantityOrdered };
+            }
+            return product;
+        });
+        setProducts(updatedProducts);
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        // Frontend validation: Check if fields are empty
+        if (!distributorName.trim()) {
+            alert('Distributor Name is required.');
+            return;
+        }
+        if (!orderNo.trim()) {
+            alert('Order No. is required.');
+            return;
+        }
+        if (products.length === 0) {
+            alert('You must upload a CSV file with products.');
+            return;
+        }
+        // Check if all products have non-empty fields
+        for (let i = 0; i < products.length; i++) {
+            const product = products[i];
+            if (!product.code || !product.description || product.minOrderQty <= 0 || product.price <= 0 || product.quantityOrdered <= 0) {
+                alert(`Product fields cannot be empty or zero. Please check product ${i + 1}.`);
+                return;
+            }
+        }
 
         const orderData = {
             distributorName,
@@ -96,8 +136,8 @@ const CreateOrder = () => {
 
             <h2>Create an Order</h2>
             <Link to="/central-admin-orders">
-    <button type="button">Go to Central Admin Order Management</button>
-</Link>
+                <button type="button">Go to Central Admin Order Management</button>
+            </Link>
             <form onSubmit={handleSubmit} className="order-form">
                 <h3>Step 1: Upload an Order Template</h3>
                 <a href="/order_template.csv" download>
@@ -139,19 +179,30 @@ const CreateOrder = () => {
                     <tbody>
                         {products.map((product, index) => (
                             <tr key={index}>
-                                <td style={{ wordBreak: 'break-all' }}>{product.code}</td>
-                                <td>{product.description}</td>
-                                <td>{product.minOrderQty}</td>
-                                <td>${product.price.toFixed(2)}</td>
+                                {product.isEditing ? (
+                                    <>
+                                        <td><input type="text" value={product.code} onChange={(e) => handleInputChange(index, 'code', e.target.value)} /></td>
+                                        <td><input type="text" value={product.description} onChange={(e) => handleInputChange(index, 'description', e.target.value)} /></td>
+                                        <td><input type="number" value={product.minOrderQty} onChange={(e) => handleInputChange(index, 'minOrderQty', e.target.value)} /></td>
+                                        <td><input type="number" value={product.price} onChange={(e) => handleInputChange(index, 'price', e.target.value)} /></td>
+                                        <td><input type="number" value={product.quantityOrdered} onChange={(e) => handleInputChange(index, 'quantityOrdered', e.target.value)} /></td>
+                                        <td>${(product.price * product.quantityOrdered).toFixed(2)}</td>
+                                    </>
+                                ) : (
+                                    <>
+                                        <td>{product.code}</td>
+                                        <td>{product.description}</td>
+                                        <td>{product.minOrderQty}</td>
+                                        <td>${product.price.toFixed(2)}</td>
+                                        <td>{product.quantityOrdered}</td>
+                                        <td>${product.totalValue.toFixed(2)}</td>
+                                    </>
+                                )}
                                 <td>
-                                    <input
-                                        type="number"
-                                        value={product.quantityOrdered}
-                                        onChange={(e) => handleQuantityChange(index, e.target.value)}
-                                    />
+                                    <button type="button" onClick={() => handleEditToggle(index)}>
+                                        {product.isEditing ? 'Save' : 'Edit'}
+                                    </button>
                                 </td>
-                                <td>${product.totalValue.toFixed(2)}</td>
-                                <td><button type="button">Edit</button></td>
                             </tr>
                         ))}
                     </tbody>
