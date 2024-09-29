@@ -6,15 +6,20 @@ const mysql = require('mysql2');
 const app = express();
 const port = 1234;
 
-app.use(cors());
+app.use(cors({
+    origin: 'https://xangarsordermanage.netlify.app'
+  }));
+
+
+
 app.use(bodyParser.json());
 
 // MySQL Database Connection
 const db = mysql.createConnection({
-    host: 'localhost',
-    user: 'newuser',         // Replace with your MySQL username
-    password: 'Vedant@123',  // Replace with your MySQL password
-    database: 'order_management'
+    host: 'us-cluster-east-01.k8s.cleardb.net',
+    user: 'b2d8a0a0f63451',         // Replace with your MySQL username
+    password: '07030726',  // Replace with your MySQL password
+    database: 'heroku_cbfcd4de2f6f350'
 });
 
 db.connect((err) => {
